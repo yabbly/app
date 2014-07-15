@@ -1,0 +1,33 @@
+<project name="yabbly" default="compile" basedir=".">
+
+  <path id="classpath">
+    <fileset dir="build-lib">
+      <include name="*.jar"/>
+    </fileset>
+    <fileset dir="lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <loadfile property="version" srcFile="${basedir}/.version">
+    <filterchain>
+      <striplinebreaks/>
+    </filterchain>
+  </loadfile>
+
+  <target name="compile">
+    <ant antfile="common/build.xml" target="share" inheritAll="false"/>
+  </target>
+
+  <target name="clean">
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="classpath"/>
+    <mkdir dir=".____src"/>
+    <fsc srcdir=".____src" reset="true"/>
+    <delete dir=".____src"/>
+
+    <delete dir="target"/>
+    <delete dir="artifact"/>
+    <ant antfile="common/build.xml" target="clean" inheritAll="false"/>
+  </target>
+
+</project>

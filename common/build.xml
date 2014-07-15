@@ -1,0 +1,65 @@
+<project name="common" default="compile" basedir=".">
+
+  <path id="classpath">
+    <fileset dir="../lib">
+      <include name="*.jar"/>
+    </fileset>
+    <pathelement location="target/classes"/>
+  </path>
+
+  <path id="build.classpath">
+    <fileset dir="../build-lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="compile.classpath">
+    <path refid="classpath"/>
+    <path refid="build.classpath"/>
+  </path>
+
+  <target name="gen">
+    <delete dir="src/main/gen-jvm"/>
+    <mkdir dir="src/main/gen-jvm"/>
+    <exec executable="protoc" failonerror="true">
+      <arg value="--java_out=src/main/gen-jvm"/> 
+      <arg value="--proto_path=src/main/protobuf"/> 
+      <arg value="src/main/protobuf/common.proto"/> 
+    </exec>
+  </target>
+
+  <target name="compile">
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="compile.classpath"/>
+
+    <mkdir dir="target/classes"/>
+
+    <fsc
+        srcdir='src/main/jvm:src/main/gen-jvm'
+        destdir='target/classes'
+        classpathref='compile.classpath'
+        failonerror='true'
+        />
+
+    <javac
+        srcdir='src/main/jvm:src/main/gen-jvm'
+        destdir="target/classes"
+        includeAntRuntime="false"
+        debug="true">
+      <classpath refid="classpath"/>
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar jarfile="target/common.jar" basedir="target/classes"/>
+  </target>
+
+  <target name="share" depends="jar">
+    <mkdir dir="../artifact"/>
+    <copy file="target/common.jar" todir="../artifact"/>
+  </target>
+
+  <target name="clean">
+    <delete dir="target"/>
+  </target>
+
+</project>

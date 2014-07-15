@@ -1,0 +1,20 @@
+package com.studio6.app.common;
+
+option java_package = "com.studio6.app.common";
+option java_outer_classname = "CommonProtos";
+
+message WorkQueue {
+  message Item {
+    message Attempt {
+      required string creation_date = 1;
+      optional string message       = 2;
+    }
+
+    required string id                   = 1;
+    required string creation_date        = 2;
+    required int64 max_process_ms        = 3;
+    required bytes item                  = 4;
+    optional Attempt in_progress_attempt = 5;
+    repeated Attempt attempts            = 6;
+  }
+}
