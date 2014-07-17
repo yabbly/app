@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+source $(dirname $0)/../.include
+
+name=scala-console
+
+SCREEN_JAVA_OPTS="-Dapp.env=$APP_ENV -Dapp.name=$name"
+
+scala \
+-J"-Xmx1g" \
+$SCREEN_JAVA_OPTS \
+-classpath $BASEDIR/lib/\*:$BASEDIR/artifact/\* \
+-Yrepl-sync \
+"$@"

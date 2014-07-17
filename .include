@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd $(dirname $0)/..
+BASEDIR=$PWD
+cd - >/dev/null
+
+source $BASEDIR/.env
+source $BASEDIR/.functions
+
+version=$(cat $BASEDIR/.version)

@@ -33,13 +33,6 @@
 
     <mkdir dir="target/classes"/>
 
-    <fsc
-        srcdir='src/main/jvm:src/main/gen-jvm'
-        destdir='target/classes'
-        classpathref='compile.classpath'
-        failonerror='true'
-        />
-
     <javac
         srcdir='src/main/jvm:src/main/gen-jvm'
         destdir="target/classes"
@@ -47,6 +40,13 @@
         debug="true">
       <classpath refid="classpath"/>
     </javac>
+
+    <fsc
+        srcdir='src/main/jvm'
+        destdir='target/classes'
+        classpathref='compile.classpath'
+        failonerror='true'
+        />
   </target>
 
   <target name="jar" depends="compile">

@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+source $(dirname $0)/../.include
+
+function print-usage() {
+  if test -n "$1"; then echo $1 1>&2; fi
+  echo 1>&2
+
+  echo "Usage: $(basename $0) [options] java-args..." 1>&2
+  echo "    -h    Print help message" 1>&2
+  echo "    -D    Set java system property" 1>&2
+  echo "    -d    Debug" 1>&2
+  echo 1>&2
+
+  log "Exiting"
+  exit 1;
+}
+
+while getopts "hdD:" option; do
+  case $option in
+    h ) print-usage;;
+    D ) export JAVA_OPTS="$JAVA_OPTS -D$OPTARG";;
+    d ) export JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000";;
+  esac
+done
+
+shift $(($OPTIND - 1))
+
+if test $# -lt 1; then
+  print-usage "At least one argument is required"
+fi
+
+java \
+$JAVA_OPTS \
+-classpath $BASEDIR/lib/\*:$BASEDIR/artifact/\* \
+"$@"
