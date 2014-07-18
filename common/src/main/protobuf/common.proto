@@ -3,18 +3,28 @@ package com.studio6.app.common.proto;
 option java_package = "com.studio6.app.common.proto";
 option java_outer_classname = "CommonProtos";
 
-message WorkItem {
-  message Attempt {
-    required string creation_date = 1;
-    optional string message       = 2;
+message WorkQueue {
+
+  message Item {
+    message Attempt {
+      required string creation_date = 1;
+      optional string message       = 2;
+    }
+
+    required string id                       = 1;
+    required string creation_date            = 2;
+    required bytes item                      = 3;
+    optional int64 max_process_ms            = 4;
+    optional int64 max_attempts              = 5;
+    optional int64 delay_between_attempts_s  = 6;
+    optional Attempt in_progress_attempt     = 7;
+    repeated Attempt attempt                 = 8;
   }
 
-  required string id                      = 1;
-  required string creation_date           = 2;
-  required int64 max_process_ms           = 3;
-  required int64 max_attempts             = 4;
-  required int64 wait_between_attempts_ms = 5;
-  required bytes item                     = 6;
-  optional Attempt in_progress_attempt    = 7;
-  repeated Attempt attempt                = 8;
+  message Delayed {
+    required string id                 = 1;
+    required bytes item                = 2;
+    required string datetime_to_submit = 3;
+    required string qname              = 4;
+  }
 }
