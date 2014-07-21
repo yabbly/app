@@ -1,5 +1,11 @@
 <project name="common" default="compile" basedir=".">
 
+  <loadfile property="version" srcFile="../.version">
+    <filterchain>
+      <striplinebreaks/>
+    </filterchain>
+  </loadfile>
+
   <path id="classpath">
     <fileset dir="../lib">
       <include name="*.jar"/>
@@ -55,7 +61,7 @@
 
   <target name="share" depends="jar">
     <mkdir dir="../artifact"/>
-    <copy file="target/common.jar" todir="../artifact"/>
+    <copy file="target/${ant.project.name}.jar" tofile="../artifact/${ant.project.name}-${version}.jar"/>
   </target>
 
   <target name="clean">

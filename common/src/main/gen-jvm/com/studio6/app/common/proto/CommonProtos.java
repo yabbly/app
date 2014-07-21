@@ -163,15 +163,15 @@ public final class CommonProtos {
        */
       long getMaxAttempts();
 
-      // optional int64 delay_between_attempts_s = 6;
+      // optional int64 delay_between_attempts_ms = 6;
       /**
-       * <code>optional int64 delay_between_attempts_s = 6;</code>
+       * <code>optional int64 delay_between_attempts_ms = 6;</code>
        */
-      boolean hasDelayBetweenAttemptsS();
+      boolean hasDelayBetweenAttemptsMs();
       /**
-       * <code>optional int64 delay_between_attempts_s = 6;</code>
+       * <code>optional int64 delay_between_attempts_ms = 6;</code>
        */
-      long getDelayBetweenAttemptsS();
+      long getDelayBetweenAttemptsMs();
 
       // optional .com.studio6.app.common.proto.WorkQueue.Item.Attempt in_progress_attempt = 7;
       /**
@@ -290,7 +290,7 @@ public final class CommonProtos {
               }
               case 48: {
                 bitField0_ |= 0x00000020;
-                delayBetweenAttemptsS_ = input.readInt64();
+                delayBetweenAttemptsMs_ = input.readInt64();
                 break;
               }
               case 58: {
@@ -1126,20 +1126,20 @@ public final class CommonProtos {
         return maxAttempts_;
       }
 
-      // optional int64 delay_between_attempts_s = 6;
-      public static final int DELAY_BETWEEN_ATTEMPTS_S_FIELD_NUMBER = 6;
-      private long delayBetweenAttemptsS_;
+      // optional int64 delay_between_attempts_ms = 6;
+      public static final int DELAY_BETWEEN_ATTEMPTS_MS_FIELD_NUMBER = 6;
+      private long delayBetweenAttemptsMs_;
       /**
-       * <code>optional int64 delay_between_attempts_s = 6;</code>
+       * <code>optional int64 delay_between_attempts_ms = 6;</code>
        */
-      public boolean hasDelayBetweenAttemptsS() {
+      public boolean hasDelayBetweenAttemptsMs() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       /**
-       * <code>optional int64 delay_between_attempts_s = 6;</code>
+       * <code>optional int64 delay_between_attempts_ms = 6;</code>
        */
-      public long getDelayBetweenAttemptsS() {
-        return delayBetweenAttemptsS_;
+      public long getDelayBetweenAttemptsMs() {
+        return delayBetweenAttemptsMs_;
       }
 
       // optional .com.studio6.app.common.proto.WorkQueue.Item.Attempt in_progress_attempt = 7;
@@ -1206,7 +1206,7 @@ public final class CommonProtos {
         item_ = com.google.protobuf.ByteString.EMPTY;
         maxProcessMs_ = 0L;
         maxAttempts_ = 0L;
-        delayBetweenAttemptsS_ = 0L;
+        delayBetweenAttemptsMs_ = 0L;
         inProgressAttempt_ = com.studio6.app.common.proto.CommonProtos.WorkQueue.Item.Attempt.getDefaultInstance();
         attempt_ = java.util.Collections.emptyList();
       }
@@ -1262,7 +1262,7 @@ public final class CommonProtos {
           output.writeInt64(5, maxAttempts_);
         }
         if (((bitField0_ & 0x00000020) == 0x00000020)) {
-          output.writeInt64(6, delayBetweenAttemptsS_);
+          output.writeInt64(6, delayBetweenAttemptsMs_);
         }
         if (((bitField0_ & 0x00000040) == 0x00000040)) {
           output.writeMessage(7, inProgressAttempt_);
@@ -1301,7 +1301,7 @@ public final class CommonProtos {
         }
         if (((bitField0_ & 0x00000020) == 0x00000020)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeInt64Size(6, delayBetweenAttemptsS_);
+            .computeInt64Size(6, delayBetweenAttemptsMs_);
         }
         if (((bitField0_ & 0x00000040) == 0x00000040)) {
           size += com.google.protobuf.CodedOutputStream
@@ -1439,7 +1439,7 @@ public final class CommonProtos {
           bitField0_ = (bitField0_ & ~0x00000008);
           maxAttempts_ = 0L;
           bitField0_ = (bitField0_ & ~0x00000010);
-          delayBetweenAttemptsS_ = 0L;
+          delayBetweenAttemptsMs_ = 0L;
           bitField0_ = (bitField0_ & ~0x00000020);
           if (inProgressAttemptBuilder_ == null) {
             inProgressAttempt_ = com.studio6.app.common.proto.CommonProtos.WorkQueue.Item.Attempt.getDefaultInstance();
@@ -1504,7 +1504,7 @@ public final class CommonProtos {
           if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
             to_bitField0_ |= 0x00000020;
           }
-          result.delayBetweenAttemptsS_ = delayBetweenAttemptsS_;
+          result.delayBetweenAttemptsMs_ = delayBetweenAttemptsMs_;
           if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
             to_bitField0_ |= 0x00000040;
           }
@@ -1557,8 +1557,8 @@ public final class CommonProtos {
           if (other.hasMaxAttempts()) {
             setMaxAttempts(other.getMaxAttempts());
           }
-          if (other.hasDelayBetweenAttemptsS()) {
-            setDelayBetweenAttemptsS(other.getDelayBetweenAttemptsS());
+          if (other.hasDelayBetweenAttemptsMs()) {
+            setDelayBetweenAttemptsMs(other.getDelayBetweenAttemptsMs());
           }
           if (other.hasInProgressAttempt()) {
             mergeInProgressAttempt(other.getInProgressAttempt());
@@ -1890,35 +1890,35 @@ public final class CommonProtos {
           return this;
         }
 
-        // optional int64 delay_between_attempts_s = 6;
-        private long delayBetweenAttemptsS_ ;
+        // optional int64 delay_between_attempts_ms = 6;
+        private long delayBetweenAttemptsMs_ ;
         /**
-         * <code>optional int64 delay_between_attempts_s = 6;</code>
+         * <code>optional int64 delay_between_attempts_ms = 6;</code>
          */
-        public boolean hasDelayBetweenAttemptsS() {
+        public boolean hasDelayBetweenAttemptsMs() {
           return ((bitField0_ & 0x00000020) == 0x00000020);
         }
         /**
-         * <code>optional int64 delay_between_attempts_s = 6;</code>
+         * <code>optional int64 delay_between_attempts_ms = 6;</code>
          */
-        public long getDelayBetweenAttemptsS() {
-          return delayBetweenAttemptsS_;
+        public long getDelayBetweenAttemptsMs() {
+          return delayBetweenAttemptsMs_;
         }
         /**
-         * <code>optional int64 delay_between_attempts_s = 6;</code>
+         * <code>optional int64 delay_between_attempts_ms = 6;</code>
          */
-        public Builder setDelayBetweenAttemptsS(long value) {
+        public Builder setDelayBetweenAttemptsMs(long value) {
           bitField0_ |= 0x00000020;
-          delayBetweenAttemptsS_ = value;
+          delayBetweenAttemptsMs_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>optional int64 delay_between_attempts_s = 6;</code>
+         * <code>optional int64 delay_between_attempts_ms = 6;</code>
          */
-        public Builder clearDelayBetweenAttemptsS() {
+        public Builder clearDelayBetweenAttemptsMs() {
           bitField0_ = (bitField0_ & ~0x00000020);
-          delayBetweenAttemptsS_ = 0L;
+          delayBetweenAttemptsMs_ = 0L;
           onChanged();
           return this;
         }
@@ -3437,19 +3437,19 @@ public final class CommonProtos {
   static {
     java.lang.String[] descriptorData = {
       "\n\014common.proto\022\034com.studio6.app.common.p" +
-      "roto\"\262\003\n\tWorkQueue\032\324\002\n\004Item\022\n\n\002id\030\001 \002(\t\022" +
+      "roto\"\263\003\n\tWorkQueue\032\325\002\n\004Item\022\n\n\002id\030\001 \002(\t\022" +
       "\025\n\rcreation_date\030\002 \002(\t\022\014\n\004item\030\003 \002(\014\022\026\n\016" +
       "max_process_ms\030\004 \001(\003\022\024\n\014max_attempts\030\005 \001" +
-      "(\003\022 \n\030delay_between_attempts_s\030\006 \001(\003\022Q\n\023" +
-      "in_progress_attempt\030\007 \001(\01324.com.studio6." +
-      "app.common.proto.WorkQueue.Item.Attempt\022" +
-      "E\n\007attempt\030\010 \003(\01324.com.studio6.app.commo" +
-      "n.proto.WorkQueue.Item.Attempt\0321\n\007Attemp" +
-      "t\022\025\n\rcreation_date\030\001 \002(\t\022\017\n\007message\030\002 \001(",
-      "\t\032N\n\007Delayed\022\n\n\002id\030\001 \002(\t\022\014\n\004item\030\002 \002(\014\022\032" +
-      "\n\022datetime_to_submit\030\003 \002(\t\022\r\n\005qname\030\004 \002(" +
-      "\tB,\n\034com.studio6.app.common.protoB\014Commo" +
-      "nProtos"
+      "(\003\022!\n\031delay_between_attempts_ms\030\006 \001(\003\022Q\n" +
+      "\023in_progress_attempt\030\007 \001(\01324.com.studio6" +
+      ".app.common.proto.WorkQueue.Item.Attempt" +
+      "\022E\n\007attempt\030\010 \003(\01324.com.studio6.app.comm" +
+      "on.proto.WorkQueue.Item.Attempt\0321\n\007Attem" +
+      "pt\022\025\n\rcreation_date\030\001 \002(\t\022\017\n\007message\030\002 \001",
+      "(\t\032N\n\007Delayed\022\n\n\002id\030\001 \002(\t\022\014\n\004item\030\002 \002(\014\022" +
+      "\032\n\022datetime_to_submit\030\003 \002(\t\022\r\n\005qname\030\004 \002" +
+      "(\tB,\n\034com.studio6.app.common.protoB\014Comm" +
+      "onProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -3467,7 +3467,7 @@ public final class CommonProtos {
           internal_static_com_studio6_app_common_proto_WorkQueue_Item_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_com_studio6_app_common_proto_WorkQueue_Item_descriptor,
-              new java.lang.String[] { "Id", "CreationDate", "Item", "MaxProcessMs", "MaxAttempts", "DelayBetweenAttemptsS", "InProgressAttempt", "Attempt", });
+              new java.lang.String[] { "Id", "CreationDate", "Item", "MaxProcessMs", "MaxAttempts", "DelayBetweenAttemptsMs", "InProgressAttempt", "Attempt", });
           internal_static_com_studio6_app_common_proto_WorkQueue_Item_Attempt_descriptor =
             internal_static_com_studio6_app_common_proto_WorkQueue_Item_descriptor.getNestedTypes().get(0);
           internal_static_com_studio6_app_common_proto_WorkQueue_Item_Attempt_fieldAccessorTable = new

@@ -16,7 +16,7 @@ message WorkQueue {
     required bytes item                      = 3;
     optional int64 max_process_ms            = 4;
     optional int64 max_attempts              = 5;
-    optional int64 delay_between_attempts_s  = 6;
+    optional int64 delay_between_attempts_ms = 6;
     optional Attempt in_progress_attempt     = 7;
     repeated Attempt attempt                 = 8;
   }
