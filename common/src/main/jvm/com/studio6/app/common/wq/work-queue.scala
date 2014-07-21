@@ -3,7 +3,7 @@ package com.studio6.app.common.wq
 import com.studio6.app.common.Log
 import com.studio6.app.common.Predef._
 import com.studio6.app.common.SecurityUtils
-import com.studio6.app.common.proto.CommonProtos.WorkQueue.Delayed
+import com.studio6.app.common.proto.CommonProtos.WorkQueue.{Delayed => WQDelayed}
 import com.studio6.app.common.proto.CommonProtos.WorkQueue.{Item => WQItem}
 import com.studio6.app.common.redis.RedisClient
 import com.studio6.app.common.redis.RedisClientHelper
@@ -17,6 +17,7 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.exceptions.JedisConnectionException
 
+import java.util.{List => JList}
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ThreadFactory
@@ -43,6 +44,8 @@ object Item {
 
 case class Item(id: String, creationDate: DateTime, item: Array[Byte], attempts: Seq[Item.Attempt])
 
+case class Delayed(id: String, submitDate: DateTime, qname: String)
+
 trait WorkQueueClient {
   def submit(qname: String, bytes: Array[Byte]): Unit
   def submit(qname: String, bytes: Array[Byte], delayMs: Int): Unit
@@ -56,10 +59,10 @@ trait WorkQueueClient {
   def getInProgressItems(qname: String, offset: Int, limit: Int): Seq[Item]
   def getFailedItems(qname: String, offset: Int, limit: Int): Seq[Item]
 
-  def findAllDelayedItems(): Seq[Delayed]
+  def allDelayedItems(): Seq[Delayed]
   def undelay(id: String): Boolean
   def undelayAllReadyToSubmit(): Unit
-  def getAllQueueNames(): Seq[String]
+  def allQueueNames(): Seq[String]
 
   def start(): Unit
   def stop(): Unit
@@ -95,7 +98,7 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
 
   override def submit(qname: String, bytes: Array[Byte], delayMs: Int) = {
     val submitTime = DateTime.now().plusMillis(delayMs)
-    val b = Delayed.newBuilder
+    val b = WQDelayed.newBuilder
         .setDatetimeToSubmit(submitTime.toString)
         .setItem(ByteString.copyFrom(bytes))
         .setQname(qname)
@@ -165,21 +168,27 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
   override def getInProgressItems(qname: String, offset: Int, limit: Int) = getItems(qname, qname.inProgress, offset, limit)
   override def getFailedItems(qname: String, offset: Int, limit: Int) = getItems(qname, qname.fails, offset, limit)
 
-  override def getAllQueueNames() = {
+  override def allQueueNames() = {
     withJedis { jedis => {
-      jedis.keys("__wq.*-idseq").map(n => n.substring(5, n.length - 4)).toSeq
+      jedis.keys("__wq.*.idseq").map(n => n.substring(5, n.length - 6)).toSeq
     }}
   }
 
-  override def findAllDelayedItems() = {
+  override def allDelayedItems() = {
     withJedis { jedis => {
-      findAllDelayedItems(jedis)
+      allDelayedItems(jedis)
     }}
   }
 
-  private def findAllDelayedItems(jedis: Jedis) = {
+  private def allRawDelayedItems(jedis: Jedis): Seq[WQDelayed] = {
     jedis.hkeys(DelayItems).map(id => {
-      Delayed.parseFrom(jedis.hget(DelayItems, id))
+      WQDelayed.parseFrom(jedis.hget(DelayItems, id))
+    }).toSeq
+  }
+
+  private def allDelayedItems(jedis: Jedis) = {
+    allRawDelayedItems(jedis).map(d => {
+      Delayed(d.getId, DateTime.parse(d.getDatetimeToSubmit), d.getQname)
     }).toSeq
   }
 
@@ -193,7 +202,7 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
     jedis.hget(DelayItems, id.toUtf8Bytes) match {
       case null => false
       case bytes: Array[Byte] => {
-        val delayed = Delayed.parseFrom(bytes)
+        val delayed = WQDelayed.parseFrom(bytes)
         jedis.hdel(DelayItems, id.toUtf8Bytes)
         submit(delayed.getQname, delayed.getItem.toByteArray)
         true
@@ -203,7 +212,7 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
 
   override def undelayAllReadyToSubmit() = {
     withJedis(jedis => inLock(jedis, "__queue.delay-lock", 4000l) {
-      findAllDelayedItems(jedis).foreach(d => {
+      allRawDelayedItems(jedis).foreach(d => {
         val now = DateTime.now
         val timeToSubmit = DateTime.parse(d.getDatetimeToSubmit)
         if (now.isAfter(timeToSubmit)) {
@@ -271,78 +280,83 @@ abstract class RedisWorkQueueWorker[T](
 
   def blockingProcessNext() = {
     withJedis(jedis => {
-      jedis.blpop(1024, qname.pending).toList match {
-        case keyName :: id :: Nil => {
-          val itemBuilder = WQItem.parseFrom(jedis.hget(qname.items, id)).toBuilder
+      jedis.blpop(1024, qname.pending) match {
+        case null => // Do nothing
+        case vs: JList[Array[Byte]] => vs.toList match {
+          case keyName :: id :: Nil => {
+            val itemBuilder = WQItem.parseFrom(jedis.hget(qname.items, id)).toBuilder
 
-          // Set default values
-          if (!itemBuilder.hasMaxProcessMs) {
-            itemBuilder.setMaxProcessMs(maxProcessMs)
-          }
+            // Set default values
+            if (!itemBuilder.hasMaxProcessMs) {
+              itemBuilder.setMaxProcessMs(maxProcessMs)
+            }
 
-          if (!itemBuilder.hasMaxAttempts) {
-            itemBuilder.setMaxAttempts(maxAttempts)
-          }
+            if (!itemBuilder.hasMaxAttempts) {
+              itemBuilder.setMaxAttempts(maxAttempts)
+            }
 
-          if (!itemBuilder.hasDelayBetweenAttemptsMs) {
-            itemBuilder.setDelayBetweenAttemptsMs(delayBetweenAttemptsMs)
-          }
-          // END Set default values
+            if (!itemBuilder.hasDelayBetweenAttemptsMs) {
+              itemBuilder.setDelayBetweenAttemptsMs(delayBetweenAttemptsMs)
+            }
+            // END Set default values
 
-          val item = itemBuilder
-              .setInProgressAttempt(WQItem.Attempt.newBuilder.setCreationDate(DateTime.now().toString))
-              .build
+            val item = itemBuilder
+                .setInProgressAttempt(WQItem.Attempt.newBuilder.setCreationDate(DateTime.now().toString))
+                .build
 
-          jedis.hset(qname.items, id, item.toByteArray)
-          jedis.rpush(qname.inProgress, id)
+            jedis.hset(qname.items, id, item.toByteArray)
+            jedis.rpush(qname.inProgress, id)
 
-          // Process the item
-          var error: Throwable = null
-          val t = deserialize(item.getItem.toByteArray)
-          try {
-            process(t)
-          } catch {
-            case e: Exception => { error = e }
-          } finally {
+            // Process the item
+            var error: Throwable = null
+            val t = deserialize(item.getItem.toByteArray)
             try {
-              // Remove from in-progress
-              jedis.lrem(qname.inProgress, 0, id) // Should return 1
-
-              if (null == error) {
-                jedis.hdel(qname.items, id) // Should return 1
-              } else {
-                val errorMessage = "%s: [%s]".format(error.getClass.getSimpleName, error.getMessage)
-                log.info("errorMessage [{}}", errorMessage)
-                
-                val attempt = item.getInProgressAttempt
-                val newItem = item.toBuilder
-                    .clearInProgressAttempt()
-                    .addAttempt(attempt.toBuilder.setMessage(errorMessage))
-                    .build
-                jedis.hset(qname.items, id, newItem.toByteArray)
-
-                val attemptCount = item.getAttemptList.size + 1
-                if (attemptCount >= item.getMaxAttempts) {
-                  log.error("Work queue failure [{}] [{}]", Array(qname, errorMessage): _*)
-                  // Move to fails
-                  jedis.rpush(qname.fails, id)
-                } else {
-                  // TODO Delay the retry
-                  // Add back to pending
-                  log.info("Rolling back item [{}] [{}]", Array(qname, errorMessage): _*)
-                  jedis.rpush(qname.pending, id)
-                }
-              }
+              process(t)
             } catch {
               case e: Exception => {
-                log.error("Unexpected exception [{}]", e.getMessage)
-                //log.error(e.getMessage, e)
+                error = e
+              }
+            } finally {
+              try {
+                // Remove from in-progress
+                jedis.lrem(qname.inProgress, 0, id) // Should return 1
+
+                if (null == error) {
+                  jedis.hdel(qname.items, id) // Should return 1
+                } else {
+                  val errorMessage = "%s: [%s]".format(error.getClass.getSimpleName, error.getMessage)
+                  //log.info("errorMessage [{}}", errorMessage)
+                  log.warn(error.getMessage, error)
+                  
+                  val attempt = item.getInProgressAttempt
+                  val newItem = item.toBuilder
+                      .clearInProgressAttempt()
+                      .addAttempt(attempt.toBuilder.setMessage(errorMessage))
+                      .build
+                  jedis.hset(qname.items, id, newItem.toByteArray)
+
+                  val attemptCount = item.getAttemptList.size + 1
+                  if (attemptCount >= item.getMaxAttempts) {
+                    log.error("Work queue failure [{}] [{}]", Array(qname, errorMessage): _*)
+                    // Move to fails
+                    jedis.rpush(qname.fails, id)
+                  } else {
+                    // TODO Delay the retry
+                    // Add back to pending
+                    log.info("Rolling back item [{}] [{}]", Array(qname, errorMessage): _*)
+                    jedis.rpush(qname.pending, id)
+                  }
+                }
+              } catch {
+                case e: Exception => {
+                  log.error("Unexpected exception [{}]", e.getMessage)
+                  //log.error(e.getMessage, e)
+                }
               }
             }
           }
+          case _ => sys.error("Unexpected result")
         }
-        case null => // Do nothing
-        case _ => sys.error("Unexpected result")
       }
     })
   }
