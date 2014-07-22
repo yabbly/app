@@ -1,0 +1,77 @@
+#!/bin/bash
+set -e
+source $(dirname $0)/../.include
+
+remote=upstream
+branch=master
+
+function print-usage() {
+  if test -n "$1"; then echo $1 1>&2; fi
+  echo 1>&2
+
+  echo "Usage: $(basename $0) [options]" 1>&2
+  echo "    -h    Print this help message" 1>&2
+  echo "    -M    Major version bump" 1>&2
+  echo "    -m    Minor version bump" 1>&2
+  echo "    -r    Remote [$remote]" 1>&2
+  echo "    -b    Branch [$branch]" 1>&2
+  echo 1>&2
+
+  log "Exiting"
+  exit 1;
+}
+
+is_major=
+is_minor=
+is_revision=1
+while getopts "hmMr:b:" option; do
+  case $option in
+    h ) print-usage;;
+    m ) is_minor=1 && is_revision=;;
+    M ) is_major=1 && is_revision=;;
+    r ) remote=$OPTARG;;
+    b ) branch=$OPTARG;;
+    * ) print-usage "Unknown option: $option";;
+  esac
+done
+
+shift $(($OPTIND - 1))
+
+if test $# -gt 0; then
+  print-usage "No arguments are allowed"
+fi
+
+version=$(cat $BASEDIR/.version)
+cur_major=$(echo $version | cut -d. -f1)
+cur_minor=$(echo $version | cut -d. -f2)
+cur_revision=$(echo $version | cut -d. -f3)
+
+c=$(git fetch --dry-run $remote 2>&1 | egrep " -> $remote/$branch\$" | wc -l)
+if test $c -ne 0; then
+  fatal "You must merge with $remote/$branch before releasing"
+fi
+
+if test $is_major; then
+  cur_major=$(($cur_major + 1))
+  cur_minor=0
+  cur_revision=0
+fi
+
+if test $is_minor; then
+  cur_minor=$(($cur_minor + 1));
+  cur_revision=0
+fi
+
+if test $is_revision; then
+  cur_revision=$(($cur_revision + 1))
+fi
+
+new_version="$cur_major.$cur_minor.$cur_revision"
+info "New version [$new_version]"
+echo $new_version >$BASEDIR/.version
+git commit -m'Version update on release' $BASEDIR/.version
+
+git tag v$new_version
+
+git push $remote $branch
+git push --tags $remote $branch
