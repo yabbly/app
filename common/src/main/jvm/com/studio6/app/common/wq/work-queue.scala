@@ -272,11 +272,16 @@ abstract class RedisWorkQueueWorker[T](
   with Log
 {
   private val executor = Executors.newSingleThreadExecutor(new ThreadFactory {
-    override def newThread(r: Runnable) = new Thread(r, s"${qname}-worker")
+    override def newThread(r: Runnable) = {
+      val t = new Thread(r, s"${qname}-worker")
+      t.setDaemon(true)
+      t
+    }
   })
 
   def start(): Unit = executor.submit(this)
-  def stop(): Unit = executor.shutdown()
+
+  def stop(): Unit = executor.shutdownNow()
 
   def blockingProcessNext() = {
     withJedis(jedis => {
@@ -313,9 +318,7 @@ abstract class RedisWorkQueueWorker[T](
             try {
               process(t)
             } catch {
-              case e: Exception => {
-                error = e
-              }
+              case e: Exception => error = e
             } finally {
               try {
                 // Remove from in-progress
@@ -325,7 +328,6 @@ abstract class RedisWorkQueueWorker[T](
                   jedis.hdel(qname.items, id) // Should return 1
                 } else {
                   val errorMessage = "%s: [%s]".format(error.getClass.getSimpleName, error.getMessage)
-                  //log.info("errorMessage [{}}", errorMessage)
                   log.warn(error.getMessage, error)
                   
                   val attempt = item.getInProgressAttempt
@@ -341,7 +343,6 @@ abstract class RedisWorkQueueWorker[T](
                     // Move to fails
                     jedis.rpush(qname.fails, id)
                   } else {
-                    // TODO Delay the retry
                     // Add back to pending
                     log.info("Rolling back item [{}] [{}]", Array(qname, errorMessage): _*)
                     jedis.rpush(qname.pending, id)
