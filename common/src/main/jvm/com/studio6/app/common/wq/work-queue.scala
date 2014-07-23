@@ -49,15 +49,15 @@ case class Delayed(id: String, submitDate: DateTime, qname: String)
 trait WorkQueueClient {
   def submit(qname: String, bytes: Array[Byte]): Unit
   def submit(qname: String, bytes: Array[Byte], delayMs: Int): Unit
-  def retry(qname: String, item: Item): Unit
+  def retry(qname: String, id: String): Unit
   def delete(qname: String): Unit
   def delete(qname: String, item: Item): Boolean
   def size(qname: String): Long
   def inProgressSize(qname: String): Long
   def failSize(qname: String): Long
-  def getItems(qname: String, offset: Int, limit: Int): Seq[Item]
-  def getInProgressItems(qname: String, offset: Int, limit: Int): Seq[Item]
-  def getFailedItems(qname: String, offset: Int, limit: Int): Seq[Item]
+  def allItems(qname: String, offset: Int, limit: Int): Seq[Item]
+  def allInProgressItems(qname: String, offset: Int, limit: Int): Seq[Item]
+  def allFailedItems(qname: String, offset: Int, limit: Int): Seq[Item]
 
   def allDelayedItems(): Seq[Delayed]
   def undelay(id: String): Boolean
@@ -116,12 +116,10 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
         dms, MILLISECONDS)
   }
 
-  override def retry(qname: String, item: Item) = {
-    val i = item.asInstanceOf[WQItem]
-    val id = i.getId.toUtf8Bytes
+  override def retry(qname: String, id: String) = {
     withJedis { jedis => {
-      jedis.lrem(qname.fails, 0, id)
-      jedis.rpush(qname.pending, id)
+      jedis.lrem(qname.fails, 0, id.toUtf8Bytes)
+      jedis.rpush(qname.pending, id.toUtf8Bytes)
     }}
   }
 
@@ -164,9 +162,9 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
     }}
   }
 
-  override def getItems(qname: String, offset: Int, limit: Int) = getItems(qname, qname.pending, offset, limit)
-  override def getInProgressItems(qname: String, offset: Int, limit: Int) = getItems(qname, qname.inProgress, offset, limit)
-  override def getFailedItems(qname: String, offset: Int, limit: Int) = getItems(qname, qname.fails, offset, limit)
+  override def allItems(qname: String, offset: Int, limit: Int) = allItems(qname, qname.pending, offset, limit)
+  override def allInProgressItems(qname: String, offset: Int, limit: Int) = allItems(qname, qname.inProgress, offset, limit)
+  override def allFailedItems(qname: String, offset: Int, limit: Int) = allItems(qname, qname.fails, offset, limit)
 
   override def allQueueNames() = {
     withJedis { jedis => {
@@ -222,7 +220,7 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
     })
   }
 
-  private def getItems(qname: String, name: Array[Byte], offset: Int, limit: Int): Seq[Item] = {
+  private def allItems(qname: String, name: Array[Byte], offset: Int, limit: Int): Seq[Item] = {
     withJedis(jedis => {
       val ids = jedis.lrange(name, offset, (limit-1))
       if (ids != null) {
