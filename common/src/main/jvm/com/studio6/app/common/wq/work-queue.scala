@@ -51,7 +51,7 @@ trait WorkQueueClient {
   def submit(qname: String, bytes: Array[Byte], delayMs: Int): Unit
   def retry(qname: String, id: String): Unit
   def delete(qname: String): Unit
-  def delete(qname: String, item: Item): Boolean
+  def delete(qname: String, id: String): Boolean
   def size(qname: String): Long
   def inProgressSize(qname: String): Long
   def failSize(qname: String): Long
@@ -133,14 +133,12 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
     }}
   }
 
-  override def delete(qname: String, item: Item) = {
-    val i = item.asInstanceOf[WQItem]
-    val id = i.getId.toUtf8Bytes
+  override def delete(qname: String, id: String) = {
     withJedis { jedis => {
-      jedis.lrem(qname.inProgress, 0, id)
-      jedis.lrem(qname.fails, 0, id)
-      jedis.lrem(qname.pending, 0, id)
-      jedis.hdel(qname.items, id) == 1
+      jedis.lrem(qname.inProgress, 0, id.toUtf8Bytes)
+      jedis.lrem(qname.fails, 0, id.toUtf8Bytes)
+      jedis.lrem(qname.pending, 0, id.toUtf8Bytes)
+      jedis.hdel(qname.items, id.toUtf8Bytes) == 1
     }}
   }
 
