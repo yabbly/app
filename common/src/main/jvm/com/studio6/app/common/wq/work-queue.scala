@@ -59,6 +59,7 @@ trait WorkQueueClient {
   def allInProgressItems(qname: String, offset: Int, limit: Int): Seq[Item]
   def allFailedItems(qname: String, offset: Int, limit: Int): Seq[Item]
 
+  def delayedSize(): Long
   def allDelayedItems(): Seq[Delayed]
   def undelay(id: String): Boolean
   def undelayAllReadyToSubmit(): Unit
@@ -168,6 +169,10 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
     withJedis { jedis => {
       jedis.keys("__wq.*.idseq").map(n => n.substring(5, n.length - 6)).toSeq
     }}
+  }
+
+  override def delayedSize() = {
+    withJedis(jedis => jedis.hlen(DelayItems))
   }
 
   override def allDelayedItems() = {
