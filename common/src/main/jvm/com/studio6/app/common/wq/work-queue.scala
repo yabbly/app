@@ -49,6 +49,7 @@ case class Delayed(id: String, submitDate: DateTime, qname: String)
 trait WorkQueueClient {
   def submit(qname: String, bytes: Array[Byte]): Unit
   def submit(qname: String, bytes: Array[Byte], delayMs: Int): Unit
+  def submit(qname: String, bytes: Array[Byte], submitTime: DateTime): Unit
   def retry(qname: String, id: String): Unit
   def delete(qname: String): Unit
   def delete(qname: String, id: String): Boolean
@@ -97,8 +98,7 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
     }}
   }
 
-  override def submit(qname: String, bytes: Array[Byte], delayMs: Int) = {
-    val submitTime = DateTime.now().plusMillis(delayMs)
+  override def submit(qname: String, bytes: Array[Byte], submitTime: DateTime) = {
     val b = WQDelayed.newBuilder
         .setDatetimeToSubmit(submitTime.toString)
         .setItem(ByteString.copyFrom(bytes))
@@ -115,6 +115,10 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
     delayedExecutor.schedule(
         new Runnable { override def run(): Unit = undelay(id) },
         dms, MILLISECONDS)
+  }
+
+  override def submit(qname: String, bytes: Array[Byte], delayMs: Int) = {
+    submit(qname, bytes, DateTime.now().plusMillis(delayMs))
   }
 
   override def retry(qname: String, id: String) = {
