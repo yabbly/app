@@ -344,7 +344,7 @@ abstract class RedisWorkQueueWorker[T](
 
                   val attemptCount = item.getAttemptList.size + 1
                   if (attemptCount >= item.getMaxAttempts) {
-                    log.error("Work queue failure [{}] [{}]", Array(qname, errorMessage): _*)
+                    log.error("Work queue failure [{}] [{}] [{}]", Array(qname, errorMessage, t.toString): _*)
                     // Move to fails
                     jedis.rpush(qname.fails, id)
                   } else {
@@ -355,7 +355,7 @@ abstract class RedisWorkQueueWorker[T](
                 }
               } catch {
                 case e: Exception => {
-                  log.error("Unexpected exception [{}]", e.getMessage)
+                  log.error("Unexpected exception [{}] [{}]", Array(e.getMessage, t.toString): _*)
                   //log.error(e.getMessage, e)
                 }
               }
