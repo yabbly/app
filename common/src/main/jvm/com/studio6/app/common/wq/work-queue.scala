@@ -47,6 +47,7 @@ case class Item(id: String, creationDate: DateTime, item: Array[Byte], attempts:
 case class Delayed(id: String, submitDate: DateTime, qname: String)
 
 trait WorkQueueClient {
+  def item(qname: String, id: String): Array[Byte]
   def submit(qname: String, bytes: Array[Byte]): Unit
   def submit(qname: String, bytes: Array[Byte], delayMs: Int): Unit
   def submit(qname: String, bytes: Array[Byte], submitTime: DateTime): Unit
@@ -84,6 +85,13 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
   override def start(): Unit = ()
 
   override def stop(): Unit = delayedExecutor.shutdownNow()
+
+  override def item(qname: String, id: String): Array[Byte] = {
+    withJedis(jedis => {
+      val wqItem = WQItem.parseFrom(jedis.hget(qname.items, id.toUtf8Bytes))
+      wqItem.getItem.toByteArray
+    })
+  }
 
   override def submit(qname: String, bytes: Array[Byte]) = {
     val b = WQItem.newBuilder
