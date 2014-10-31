@@ -395,6 +395,11 @@ abstract class RedisWorkQueueWorker[T](
           }
           backoffSleepTime = backoffSleepTime * 2
         }
+
+        case t: Throwable => {
+          log.error(t.getMessage, t)
+          throw t
+        }
       }
     }
   }
