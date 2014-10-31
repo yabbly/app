@@ -52,6 +52,7 @@ trait WorkQueueClient {
   def submit(qname: String, bytes: Array[Byte], delayMs: Int): Unit
   def submit(qname: String, bytes: Array[Byte], submitTime: DateTime): Unit
   def retry(qname: String, id: String): Unit
+  def rollback(qname: String, id: String): Unit
   def delete(qname: String): Unit
   def delete(qname: String, id: String): Boolean
   def size(qname: String): Long
@@ -134,6 +135,13 @@ class RedisWorkQueueClient(val redisClient: RedisClient)
       jedis.lrem(qname.fails, 0, id.toUtf8Bytes)
       jedis.rpush(qname.pending, id.toUtf8Bytes)
     }}
+  }
+
+  override def rollback(qname: String, id: String) = {
+    withJedis(jedis => {
+      jedis.lrem(qname.inProgress, 0, id.toUtf8Bytes) // Should return 1
+      jedis.rpush(qname.pending, id.toUtf8Bytes)
+    })
   }
 
   override def delete(qname: String) = {
